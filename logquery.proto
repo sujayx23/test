@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package logquery;
+
+option go_package = "./logquery";
+
+// LogQuery service for distributed log searching
+service LogQuery {
+    // QueryLogs searches for patterns in log files
+    rpc QueryLogs(QueryRequest) returns (QueryResponse);
+}
+
+// Request message containing grep pattern and options
+message QueryRequest {
+    string pattern = 1;        // The grep pattern to search for
+    string options = 2;        // Grep options (e.g., "-i", "-E", "-v")
+    string machine_id = 3;     // Machine identifier for logging
+}
+
+// Response message containing search results
+message QueryResponse {
+    string machine_id = 1;     // Machine that processed the query
+    int32 line_count = 2;      // Number of matching lines found
+    string filename = 3;       // Name of the log file searched
+    repeated string lines = 4; // Matching log lines
+    string error = 5;          // Error message if any
+    bool success = 6;          // Whether the query was successful
+}
