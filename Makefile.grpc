@@ -18,8 +18,8 @@ all: proto server client
 proto:
 	@echo "Generating protobuf Go code..."
 	@mkdir -p $(PROTO_DIR)
-	@protoc --go_out=. --go_opt=paths=source_relative \
-		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	@protoc --go_out=./$(PROTO_DIR) --go_opt=paths=source_relative \
+		--go-grpc_out=./$(PROTO_DIR) --go-grpc_opt=paths=source_relative \
 		$(PROTO_FILE)
 	@echo "Protobuf code generated in $(PROTO_DIR)/"
 

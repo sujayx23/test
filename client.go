@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	pb "distributed-log-querying/logquery"
+	pb "github.com/sujayx23/g71_test/logquery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

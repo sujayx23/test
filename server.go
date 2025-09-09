@@ -8,12 +8,10 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
-	pb "distributed-log-querying/logquery"
+	pb "github.com/sujayx23/g71_test/logquery"
 	"google.golang.org/grpc"
 )
 
@@ -91,7 +89,7 @@ func (s *LogQueryServer) executeGrep(pattern, options string) ([]string, int, er
 	}
 	
 	// Add pattern and filename
-	args = append(args, pattern, s.logFile)
+	args = append(args, "-e", pattern, "--", s.logFile)
 
 	// Execute grep command with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -124,30 +122,8 @@ func sanitizePattern(pattern string) string {
 		return ""
 	}
 
-	// Remove dangerous characters that could be used for command injection
-	dangerousChars := []string{";", "&", "|", "`", "$", "(", ")", "<", ">", "\n", "\r"}
-	sanitized := pattern
-
-	for _, char := range dangerousChars {
-		sanitized = strings.ReplaceAll(sanitized, char, "")
-	}
-
-	// Trim whitespace
-	sanitized = strings.TrimSpace(sanitized)
-
-	// Additional validation - ensure it's not empty after sanitization
-	if sanitized == "" {
-		return ""
-	}
-
-	// Check for valid regex pattern (basic validation)
-	if _, err := regexp.Compile(sanitized); err != nil {
-		// If it's not a valid regex, treat it as literal string
-		// This allows simple text searches
-		return sanitized
-	}
-
-	return sanitized
+	// Trim whitespace only; let grep handle regex and options
+	return strings.TrimSpace(pattern)
 }
 
 func main() {

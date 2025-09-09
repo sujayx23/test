@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package logquery;
 
-option go_package = "./logquery";
+option go_package = "github.com/sujayx23/g71_test/logquery";
 
 // LogQuery service for distributed log searching
 service LogQuery {
