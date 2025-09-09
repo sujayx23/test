@@ -1,0 +1,29 @@
+# Compiled binaries
+server
+test_client
+
+# Object files
+*.o
+
+# Log files (except sample ones)
+machine.*.log
+!machine.1.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build directories
+build/
+dist/
