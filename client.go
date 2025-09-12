@@ -118,7 +118,7 @@ func (c *LogQueryClient) queryServer(server ServerConfig, pattern, options strin
 }
 
 // PrintResults formats and prints the query results
-func (c *LogQueryClient) PrintResults(results []QueryResult, pattern string) {
+func (c *LogQueryClient) PrintResults(results []QueryResult, pattern string, countOnly bool) {
 	fmt.Printf("\n=== Distributed Log Query Results ===\n")
 	fmt.Printf("Pattern: %s\n", pattern)
 	fmt.Printf("Servers queried: %d\n\n", len(results))
@@ -146,16 +146,22 @@ func (c *LogQueryClient) PrintResults(results []QueryResult, pattern string) {
 		lineCount := result.Response.LineCount
 		totalLines += int(lineCount)
 
-		if lineCount == 0 {
-			fmt.Printf("🔍 MACHINE_%s: No matches found in %s (0 lines)\n", 
-				result.MachineID, result.Response.Filename)
+		if countOnly {
+			// Count-only mode: just show the count (like grep -c)
+			fmt.Printf("✅ MACHINE_%s: %d\n", result.MachineID, lineCount)
 		} else {
-			fmt.Printf("✅ MACHINE_%s: Found %d matching lines in %s\n", 
-				result.MachineID, lineCount, result.Response.Filename)
-			
-			// Print matching lines
-			for _, line := range result.Response.Lines {
-				fmt.Printf("   MACHINE_%s:%s\n", result.MachineID, line)
+			// Full mode: show detailed results
+			if lineCount == 0 {
+				fmt.Printf("🔍 MACHINE_%s: No matches found in %s (0 lines)\n",
+					result.MachineID, result.Response.Filename)
+			} else {
+				fmt.Printf("✅ MACHINE_%s: Found %d matching lines in %s\n",
+					result.MachineID, lineCount, result.Response.Filename)
+
+				// Print matching lines
+				for _, line := range result.Response.Lines {
+					fmt.Printf("   MACHINE_%s:%s\n", result.MachineID, line)
+				}
 			}
 		}
 		fmt.Println()
@@ -170,22 +176,24 @@ func (c *LogQueryClient) PrintResults(results []QueryResult, pattern string) {
 
 func main() {
 	// Parse command line flags
-	pattern := flag.String("pattern", "", "Grep pattern to search for (required)")
 	options := flag.String("options", "", "Grep options (e.g., '-i', '-E', '-v')")
-	servers := flag.String("servers", "localhost:8080,localhost:8081,localhost:8082", 
+	servers := flag.String("servers", "localhost:8080,localhost:8081,localhost:8082",
 		"Comma-separated list of server addresses")
 	timeout := flag.Duration("timeout", 10*time.Second, "Timeout for each server query")
+	countOnly := flag.Bool("c", false, "Show only count of matching lines (like grep -c)")
 	flag.Parse()
 
-	// Validate required arguments
-	if *pattern == "" {
-		log.Fatal("Pattern is required. Use -pattern flag.")
+	// Get pattern from positional arguments (grep-like format)
+	args := flag.Args()
+	if len(args) == 0 {
+		log.Fatal("Pattern is required. Usage: ./client-grpc <pattern> [options]")
 	}
+	pattern := args[0]
 
 	// Parse server list
 	serverList := strings.Split(*servers, ",")
 	serverConfigs := make([]ServerConfig, len(serverList))
-	
+
 	for i, addr := range serverList {
 		addr = strings.TrimSpace(addr)
 		// Extract machine ID from address (assume port number as machine ID for demo)
@@ -194,7 +202,7 @@ func main() {
 		if len(parts) > 1 {
 			machineID = parts[1]
 		}
-		
+
 		serverConfigs[i] = ServerConfig{
 			MachineID: machineID,
 			Address:   addr,
@@ -205,16 +213,16 @@ func main() {
 	client := NewLogQueryClient(serverConfigs, *timeout)
 
 	// Execute distributed query
-	fmt.Printf("Querying %d servers for pattern: '%s'\n", len(serverConfigs), *pattern)
+	fmt.Printf("Querying %d servers for pattern: '%s'\n", len(serverConfigs), pattern)
 	if *options != "" {
 		fmt.Printf("Using grep options: %s\n", *options)
 	}
 
 	start := time.Now()
-	results := client.QueryAllServers(*pattern, *options)
+	results := client.QueryAllServers(pattern, *options)
 	duration := time.Since(start)
 
 	// Print results
-	client.PrintResults(results, *pattern)
+	client.PrintResults(results, pattern, *countOnly)
 	fmt.Printf("Total query time: %v\n", duration)
 }

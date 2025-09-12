@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# VM Testing Script for Distributed Log Query System
+# Replace these variables with your actual values
+grp="ssh snh6@fa21-cs425-g71-01.cs.illinois.edu"  # Your group number
+netid="nithishsujay"  # Your NetID
+folderName="g71"  # The folder name where the repo is cloned
+
+echo "Testing Distributed Log Query System on CS425 VMs..."
+echo "Group: $grp"
+echo "NetID: $netid"
+echo ""
+
+# Test from VM1
+echo "*******************************************************************************************"
+echo "***********************************Testing from VM1 ***********************************"
+ssh $netid@fa21-cs425-g`printf $grp`-`printf %02d 1`.cs.illinois.edu "
+    cd $folderName
+    echo 'Testing ERROR pattern...'
+    ./client-grpc 'ERROR' -servers='fa21-cs425-g${grp}-01.cs.illinois.edu:8080,fa21-cs425-g${grp}-02.cs.illinois.edu:8081,fa21-cs425-g${grp}-03.cs.illinois.edu:8082'
+    echo ''
+    echo 'Testing INFO pattern...'
+    ./client-grpc 'INFO' -servers='fa21-cs425-g${grp}-01.cs.illinois.edu:8080,fa21-cs425-g${grp}-02.cs.illinois.edu:8081,fa21-cs425-g${grp}-03.cs.illinois.edu:8082'
+    echo ''
+    echo 'Testing count-only mode...'
+    ./client-grpc -c 'ERROR' -servers='fa21-cs425-g${grp}-01.cs.illinois.edu:8080,fa21-cs425-g${grp}-02.cs.illinois.edu:8081,fa21-cs425-g${grp}-03.cs.illinois.edu:8082'
+    exit
+"
+
+echo ""
+echo "VM testing complete!"

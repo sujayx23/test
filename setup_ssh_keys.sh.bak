@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# SSH Key Setup Script for CS425 VMs
+# Replace these variables with your actual values
+grp="ssh snh6@fa21-cs425-g71-01.cs.illinois.edu"  # Your group number
+netid="nithishsujay"  # Your NetID
+
+echo "Setting up SSH keys for CS425 VMs..."
+echo "Group: $grp"
+echo "NetID: $netid"
+echo ""
+
+# Copy SSH keys to all VMs (assuming 8 VMs)
+for i in {1..8}
+do
+    echo "*******************************************************************************************"
+    echo "***********************************Setting up server $i ***********************************"
+    ssh-copy-id -i ~/.ssh/id_rsa.pub $netid@fa21-cs425-g`printf $grp`-`printf %02d $i`.cs.illinois.edu
+done
+
+echo ""
+echo "SSH key setup complete! You should now be able to SSH without passwords."
+echo "Test by running: ssh $netid@fa21-cs425-g${grp}-01.cs.illinois.edu"

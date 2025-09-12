@@ -1,57 +1,108 @@
-# Distributed Log Querying System - Server
+# Distributed Log Querying System
 
-This is a basic TCP server implementation for a distributed log querying system. The server listens for client connections, receives grep commands, executes them on local log files, and returns the results.
+A Go-based distributed log querying system using gRPC for high-performance, concurrent log searching across multiple machines.
 
 ## Features
 
-- TCP socket-based communication
-- Configurable port and machine number
-- Grep command execution using `popen()`
-- Proper error handling for file not found and connection issues
-- Results prefixed with machine identifier
-- One client connection at a time
+- **gRPC Communication**: Type-safe, efficient communication between client and servers
+- **Concurrent Queries**: Client queries multiple servers simultaneously using goroutines
+- **Fault Tolerance**: Handles server failures and timeouts gracefully
+- **Full Grep Support**: Supports all grep options including regex patterns with `-E` flag
+- **Line Counting**: Reports exact number of matching lines from each server
+- **File Identification**: Each result includes the source filename
+- **Command Injection Protection**: Sanitizes input patterns for security
+
+## Architecture
+
+```
+┌─────────────┐    gRPC     ┌─────────────┐
+│   Client    │ ──────────► │   Server 1  │ ──► machine.1.log
+│             │             │             │
+│             │    gRPC     ┌─────────────┐
+│             │ ──────────► │   Server 2  │ ──► machine.2.log
+│             │             │             │
+│             │    gRPC     ┌─────────────┐
+│             │ ──────────► │   Server 3  │ ──► machine.3.log
+└─────────────┘             └─────────────┘
+```
 
 ## Files
 
-- `server.cpp` - Main server implementation
-- `test_client.cpp` - Simple test client for verification
+- `logquery.proto` - gRPC service definition
+- `server.go` - gRPC server implementation
+- `client.go` - gRPC client for distributed queries
 - `Makefile` - Build and test automation
-- `machine.1.log` - Sample log file for testing
+- `go.mod` - Go module dependencies
+
+## Prerequisites
+
+- Go 1.21 or later
+- Protocol Buffers compiler (`protoc`)
+- Go protobuf plugins:
+  ```bash
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  ```
 
 ## Building
 
 ```bash
-make all
-```
+# Install dependencies
+make deps
 
-Or build individually:
-```bash
-g++ -o server server.cpp
-g++ -o test_client test_client.cpp
+# Build everything
+make all
+
+# Or build individually
+make proto    # Generate protobuf code
+make server   # Build server
+make client   # Build client
 ```
 
 ## Usage
 
 ### Server
+
 ```bash
-./server <machine_num> <port>
+./server-grpc -machine=1 -port=8080
 ```
 
-Example:
+Options:
+- `-machine`: Machine ID (used for log file naming: `machine.X.log`)
+- `-port`: Port to listen on (default: 8080)
+
+### Client
+
 ```bash
-./server 1 8080
+./client-grpc -pattern="ERROR" -servers="localhost:8080,localhost:8081,localhost:8082"
 ```
 
-This starts a server for machine 1 listening on port 8080. The server will look for a log file named `machine.1.log`.
+Options:
+- `-pattern`: Grep pattern to search for (required)
+- `-options`: Grep options (e.g., "-i", "-E", "-v")
+- `-servers`: Comma-separated list of server addresses
+- `-timeout`: Timeout for each server query (default: 10s)
 
-### Test Client
+## Examples
+
+### Basic Text Search
 ```bash
-./test_client <host> <port>
+./client-grpc -pattern="ERROR" -servers="localhost:8080,localhost:8081"
 ```
 
-Example:
+### Case-Insensitive Search
 ```bash
-./test_client localhost 8080
+./client-grpc -pattern="error" -options="-i" -servers="localhost:8080,localhost:8081"
+```
+
+### Regex Pattern Search
+```bash
+./client-grpc -pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" -options="-E" -servers="localhost:8080,localhost:8081"
+```
+
+### Inverted Search (exclude matches)
+```bash
+./client-grpc -pattern="DEBUG" -options="-v" -servers="localhost:8080,localhost:8081"
 ```
 
 ## Testing
@@ -62,45 +113,33 @@ make test
 ```
 
 This will:
-1. Create sample log files
-2. Start the server in background
-3. Test various grep patterns
-4. Clean up
+1. Build the server and client
+2. Create sample log files for 3 machines
+3. Start 3 servers on different ports
+4. Run various query tests
+5. Clean up
 
-## Protocol
+## Performance Features
 
-1. Client connects to server
-2. Client sends grep command (e.g., "-i error", "INFO", "WARN")
-3. Server executes: `grep <command> machine.<num>.log`
-4. Server sends results with "MACHINE_X:" prefix
-5. Connection closes
-
-## Example Session
-
-```bash
-# Terminal 1: Start server
-./server 1 8080
-
-# Terminal 2: Connect and query
-echo "ERROR" | nc localhost 8080
-# Output:
-# MACHINE_1:2024-01-15 10:30:16 ERROR: Database connection failed
-# MACHINE_1:2024-01-15 10:30:19 ERROR: File not found: config.xml
-# MACHINE_1:2024-01-15 10:30:21 ERROR: Network timeout occurred
-# MACHINE_1:2024-01-15 10:30:24 ERROR: Authentication failed
-```
+- **Concurrent Server Queries**: All servers are queried simultaneously
+- **Connection Pooling**: Efficient gRPC connection management
+- **Timeout Handling**: Prevents hanging on unresponsive servers
+- **Streaming Results**: Large result sets are handled efficiently
+- **Memory Efficient**: Results are processed incrementally
 
 ## Error Handling
 
-- **File not found**: Returns error message with machine prefix
-- **Invalid grep pattern**: Returns "No matches found" message
-- **Connection failures**: Logs error and continues waiting for next client
-- **Invalid arguments**: Shows usage information and exits
+The system handles various error conditions:
 
-## Next Steps
+- **Server Unavailable**: Reports connection failures
+- **Timeout**: Configurable timeout per server query
+- **Invalid Patterns**: Sanitizes and validates input
+- **File Not Found**: Reports missing log files
+- **Grep Errors**: Handles grep execution failures
 
-This server is ready for integration into a distributed system where:
-- Multiple servers run on different machines
-- A client connects to all servers simultaneously
-- Results are aggregated from all machines
-- Fault tolerance is handled at the client level
+## Security Features
+
+- **Input Sanitization**: Removes dangerous characters from patterns
+- **Command Injection Protection**: Validates and escapes input
+- **Regex Validation**: Ensures patterns are valid before execution
+- **Timeout Protection**: Prevents long-running malicious patterns

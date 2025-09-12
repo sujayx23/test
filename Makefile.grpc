@@ -1,4 +1,4 @@
-# Makefile for gRPC Distributed Log Querying System
+# Makefile for Go gRPC Distributed Log Querying System
 
 # Go module and protobuf setup
 GO_MODULE = distributed-log-querying

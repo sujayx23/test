@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Git Clone Script for CS425 VMs
+# Replace these variables with your actual values
+grp="ssh snh6@fa21-cs425-g71-01.cs.illinois.edu"  # Your group number
+netid="snh6"  # Your NetID
+gitUsername="snh6"  # Your GitLab username
+gitPassword="glft-sZqqw-gYrg3Uj5AC3Mvx"  # Replace with your actual password
+gitRepoLink="gitlab.engr.illinois.edu/nithishsujay/g71.git"  # Replace with your actual repo URL
+folderName="g71"  # The folder name where the repo will be cloned
+
+echo "Cloning repository to all CS425 VMs..."
+echo "Group: $grp"
+echo "NetID: $netid"
+echo "Repository: $gitRepoLink"
+echo ""
+
+# Clone repository on all VMs
+for i in {1..8}
+do
+    echo "*******************************************************************************************"
+    echo "***********************************Cloning on Server $i ***********************************"
+    ssh $netid@fa21-cs425-g`printf $grp`-`printf %02d $i`.cs.illinois.edu "git clone https://$gitUsername:$gitPassword@$gitRepoLink; exit"
+done
+
+echo ""
+echo "Repository cloning complete!"
+echo "You can now sync changes using: ./sync_repo.sh"

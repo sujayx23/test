@@ -26,7 +26,7 @@ type LogQueryServer struct {
 func NewLogQueryServer(machineID string) *LogQueryServer {
 	return &LogQueryServer{
 		machineID: machineID,
-		logFile:   fmt.Sprintf("machine.%s.log", machineID),
+		logFile:   fmt.Sprintf("vm%s.log", machineID),
 	}
 }
 
@@ -81,13 +81,13 @@ func (s *LogQueryServer) QueryLogs(ctx context.Context, req *pb.QueryRequest) (*
 func (s *LogQueryServer) executeGrep(pattern, options string) ([]string, int, error) {
 	// Build grep command
 	args := []string{}
-	
+
 	// Add options if provided
 	if options != "" {
 		optionList := strings.Fields(options)
 		args = append(args, optionList...)
 	}
-	
+
 	// Add pattern and filename
 	args = append(args, "-e", pattern, "--", s.logFile)
 
